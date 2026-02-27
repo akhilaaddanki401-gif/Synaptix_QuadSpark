@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Skill-Match Pro | Advanced Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --p: #6366f1; --s: #10b981; --accent: #ec4899; --danger: #ef4444; --warning: #f59e0b; }
+        body { font-family: 'Poppins', sans-serif; background: #020617; color: white; margin: 0; overflow: hidden; }
+        #canvas-bg { position: fixed; top: 0; left: 0; z-index: -1; }
+        
+        .slide { display: none; min-height: 100vh; width: 100vw; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        .active { display: flex; animation: slideUp 0.6s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+        .hero-title { 
+            font-size: 3.5rem; font-weight: 900; line-height: 0.9; text-align: center; margin-bottom: 20px;
+            background: linear-gradient(135deg, #fff 30%, var(--p), var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-transform: uppercase; letter-spacing: -2px;
+        }
+
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(30px); 
+            padding: 25px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.1); 
+            width: 100%; max-width: 1100px; box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+        }
+
+        .btn-main { 
+            background: linear-gradient(90deg, var(--p), var(--accent)); border: none; color: white; 
+            padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; 
+            transition: 0.4s; text-transform: uppercase; letter-spacing: 1px; font-size: 11px;
+        }
+        .btn-main:hover { transform: scale(1.05); box-shadow: 0 0 30px var(--p); }
+        .btn-sec { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; }
+
+        input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 8px 12px; border-radius: 8px; outline: none; transition: 0.3s; width: 100%; font-size: 12px; box-sizing: border-box; }
+        input:focus { border-color: var(--p); background: rgba(255,255,255,0.1); }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; color: var(--p); font-size: 10px; padding: 10px; border-bottom: 2px solid rgba(255,255,255,0.05); }
+        td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.02); font-size: 12px; }
+        
+        .badge { padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 9px; text-transform: uppercase; }
+        .eligible { background: rgba(16, 185, 129, 0.15); color: var(--s); }
+        .not-eligible { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+
+        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-box { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); text-align: center; }
+        .stat-box h2 { margin: 5px 0 0 0; font-size: 24px; }
+        .stat-box p { margin: 0; font-size: 10px; opacity: 0.6; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+<canvas id="canvas-bg"></canvas>
+
+<div class="slide active" id="s1">
+    <h1 class="hero-title">SKILL MATCH<br>ANALYTICS</h1>
+    <div class="glass-card" style="max-width: 400px; text-align: center;">
+        <p style="opacity: 0.5; margin-bottom: 25px; font-size: 11px;">RECRUITMENT INTELLIGENCE SYSTEM</p>
+        <div style="display: grid; gap: 10px;">
+            <button class="btn-main" onclick="move(2)">Recruiter Portal</button>
+            <button class="btn-main btn-sec" onclick="move(3)">Student Portal</button>
+        </div>
+    </div>
+</div>
+
+<div class="slide" id="s2">
+    <div class="glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin:0">Active Job Postings</h3>
+            <button class="btn-main" onclick="move(1)">Home</button>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 120px; gap: 10px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 15px;">
+            <input type="text" id="j_comp" placeholder="Company Name">
+            <input type="text" id="j_role" placeholder="Role">
+            <button class="btn-main" onclick="postJob()">Post Job</button>
+        </div>
+        <div style="margin-top: 20px; max-height: 250px; overflow-y: auto;">
+            <table>
+                <thead><tr><th>Company</th><th>Role</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody id="j_body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="slide" id="s3">
+    <div class="glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="margin:0">Candidate Registration</h3>
+            <div>
+                <button class="btn-main" onclick="move(5)" style="background: var(--warning);">Global Stats</button>
+                <button class="btn-main btn-sec" onclick="move(1)">Exit</button>
+            </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px;">
+            <input type="text" id="s_name" placeholder="Candidate Name">
+            <input type="text" id="s_skill" placeholder="Skill (e.g. Python)">
+            <input type="number" id="s_skill_p" placeholder="Skill Proficiency %">
+            <input type="number" id="s_acad" placeholder="Academic Score %">
+        </div>
+        <button class="btn-main" onclick="addStudent()" style="width: 100%;">Process Candidate Data</button>
+
+        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; margin-top: 20px;">
+            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 20px;">
+                <h4 style="margin:0 0 10px 0; font-size: 12px; color: var(--p);">Live Feed</h4>
+                <div style="max-height: 250px; overflow-y: auto;">
+                    <table>
+                        <tbody id="s_body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div style="height: 300px; background: rgba(255,255,255,0.01); border-radius: 20px; padding: 15px;">
+                <canvas id="compChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide" id="s4">
+    <div class="glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin:0">Deep Analysis Report</h3>
+            <div>
+                <button class="btn-main btn-sec" onclick="move(3)">Back</button>
+                <button class="btn-main" onclick="move(5)">Visual Dashboard</button>
+            </div>
+        </div>
+        <div style="background: rgba(0,0,0,0.2); border-radius: 20px; overflow: hidden;">
+            <table style="margin:0;">
+                <thead style="background:rgba(255,255,255,0.05)">
+                    <tr><th>Candidate</th><th>Technical Level</th><th>Hiring Readiness</th><th>Status</th></tr>
+                </thead>
+                <tbody id="analysis_body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="slide" id="s5">
+    <div class="glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin:0">Global Talent Analytics</h3>
+            <button class="btn-main" onclick="move(3)">Back to Entry</button>
+        </div>
+
+        <div class="stat-grid">
+            <div class="stat-box" style="border-top: 3px solid var(--p);">
+                <p>Total Pool</p><h2 id="st_total">0</h2>
+            </div>
+            <div class="stat-box" style="border-top: 3px solid var(--s);">
+                <p>Hire Ready</p><h2 id="st_eligible">0</h2>
+            </div>
+            <div class="stat-box" style="border-top: 3px solid var(--accent);">
+                <p>Avg. Skill %</p><h2 id="st_avg_s">0%</h2>
+            </div>
+            <div class="stat-box" style="border-top: 3px solid var(--warning);">
+                <p>Avg. Acad %</p><h2 id="st_avg_a">0%</h2>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px;">
+            <div style="height: 300px; background: rgba(255,255,255,0.02); border-radius: 20px; padding: 20px;">
+                <h4 style="margin:0 0 15px 0; font-size: 14px;">Talent Distribution</h4>
+                <canvas id="radarChart"></canvas>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); border-radius: 20px; padding: 20px;">
+                <h4 style="margin:0 0 15px 0; font-size: 14px;">Hiring Insights</h4>
+                <ul id="insight_list" style="font-size: 12px; line-height: 2; padding-left: 15px; color:rgba(255,255,255,0.7);">
+                    <li>Waiting for data...</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // BG Animation
+    const canvas = document.getElementById('canvas-bg');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    let particles = [];
+    for(let i=0; i<60; i++) particles.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height, speed: Math.random()*0.8+0.2});
+    function animate() {
+        ctx.clearRect(0,0,canvas.width, canvas.height); ctx.fillStyle='rgba(99,102,241,0.1)';
+        particles.forEach(p => { p.y += p.speed; if(p.y > canvas.height) p.y = 0; ctx.beginPath(); ctx.arc(p.x, p.y, 1, 0, Math.PI*2); ctx.fill(); });
+        requestAnimationFrame(animate);
+    }
+    animate();
+
+    let jobList = [];
+    let studentList = [];
+    let myChart = null;
+    let radarChart = null;
+
+    function move(n) {
+        document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+        document.getElementById('s' + n).classList.add('active');
+        if(n == 3) renderChart();
+        if(n == 4) runDeepAnalysis();
+        if(n == 5) renderDashboard();
+    }
+
+    function postJob() {
+        const comp = document.getElementById('j_comp').value;
+        const role = document.getElementById('j_role').value;
+        if(comp && role) {
+            jobList.push({comp, role});
+            document.getElementById('j_comp').value = ""; document.getElementById('j_role').value = "";
+            renderJobs();
+        }
+    }
+
+    function renderJobs() {
+        document.getElementById('j_body').innerHTML = jobList.map((j,i) => `
+            <tr><td><b>${j.comp}</b></td><td>${j.role}</td><td><span class="badge eligible">Live</span></td>
+            <td><button onclick="jobList.splice(${i},1);renderJobs()" style="background:none; border:none; color:var(--accent); cursor:pointer;">Remove</button></td></tr>
+        `).join('');
+    }
+
+    function addStudent() {
+        const name = document.getElementById('s_name').value;
+        const skill = document.getElementById('s_skill').value;
+        const skillP = parseInt(document.getElementById('s_skill_p').value);
+        const acad = parseInt(document.getElementById('s_acad').value);
+        
+        if(name && !isNaN(skillP) && !isNaN(acad)) {
+            const isEligible = (skillP >= 70 && acad >= 75);
+            studentList.push({name, skill, skillP, acad, isEligible});
+            document.getElementById('s_name').value = ""; document.getElementById('s_skill').value = "";
+            document.getElementById('s_skill_p').value = ""; document.getElementById('s_acad').value = "";
+            updateStudentUI();
+        }
+    }
+
+    function updateStudentUI() {
+        document.getElementById('s_body').innerHTML = studentList.map(s => `
+            <tr>
+                <td><b>${s.name}</b><br><small style="opacity:0.5">${s.skill}</small></td>
+                <td><span class="badge ${s.isEligible ? 'eligible' : 'not-eligible'}">${s.isEligible ? 'Eligible' : 'Reject'}</span></td>
+            </tr>
+        `).join('');
+        renderChart();
+    }
+
+    function renderChart() {
+        const ctxC = document.getElementById('compChart').getContext('2d');
+        if(myChart) myChart.destroy();
+        myChart = new Chart(ctxC, {
+            type: 'bar',
+            data: {
+                labels: studentList.map(s => s.name),
+                datasets: [
+                    { label: 'Technical', data: studentList.map(s => s.skillP), backgroundColor: '#6366f1' },
+                    { label: 'Academic', data: studentList.map(s => s.acad), backgroundColor: '#ec4899' }
+                ]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff', font: { size: 10 } } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#fff' } }, x: { ticks: { color: '#fff' } } } }
+        });
+    }
+
+    function runDeepAnalysis() {
+        document.getElementById('analysis_body').innerHTML = studentList.map(s => `
+            <tr>
+                <td><b>${s.name}</b></td>
+                <td>
+                    <div style="width:100px; height:4px; background:rgba(255,255,255,0.1); border-radius:10px; margin-bottom:4px;">
+                        <div style="width:${s.skillP}%; height:100%; background:var(--p);"></div>
+                    </div>
+                    <small>${s.skillP}% Proficiency</small>
+                </td>
+                <td>${s.skillP > 85 ? 'High Performance' : 'Standard'}</td>
+                <td><span class="badge ${s.isEligible ? 'eligible' : 'not-eligible'}">${s.isEligible ? 'Shortlisted' : 'Need Training'}</span></td>
+            </tr>
+        `).join('');
+    }
+
+    function renderDashboard() {
+        const total = studentList.length;
+        const eligible = studentList.filter(s => s.isEligible).length;
+        const avgSkill = total ? (studentList.reduce((a, b) => a + b.skillP, 0) / total).toFixed(1) : 0;
+        const avgAcad = total ? (studentList.reduce((a, b) => a + b.acad, 0) / total).toFixed(1) : 0;
+
+        document.getElementById('st_total').innerText = total;
+        document.getElementById('st_eligible').innerText = eligible;
+        document.getElementById('st_avg_s').innerText = avgSkill + "%";
+        document.getElementById('st_avg_a').innerText = avgAcad + "%";
+
+        const ctxR = document.getElementById('radarChart').getContext('2d');
+        if(radarChart) radarChart.destroy();
+        radarChart = new Chart(ctxR, {
+            type: 'line',
+            data: {
+                labels: studentList.map(s => s.name),
+                datasets: [{ label: 'Skill Growth', data: studentList.map(s => s.skillP), borderColor: '#10b981', tension: 0.4, fill: true, backgroundColor: 'rgba(16,185,129,0.1)' }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false } } }
+        });
+
+        const insights = [
+            `Overall hiring eligibility is ${(eligible/total*100 || 0).toFixed(0)}%.`,
+            avgSkill > 75 ? "Technical pool is exceptionally strong." : "Consider technical upskilling programs.",
+            `${studentList.filter(s => s.skillP > 90).length} Candidates are in the 'Expert' bracket.`
+        ];
+        document.getElementById('insight_list').innerHTML = insights.map(i => `<li>${i}</li>`).join('');
+    }
+</script>
+</body>
+</html>
